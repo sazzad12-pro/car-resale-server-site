@@ -9,9 +9,6 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-// tEpCPkhvIU3r5wGm
-//  carResale
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4gwnm.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -21,6 +18,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const categoryCollection = client.db("carResale").collection("catagory");
+    const userCollection = client.db("carResale").collection("users");
     const bookedCategoryCollection = client
       .db("carResale")
       .collection("bookCategory");
@@ -39,11 +37,37 @@ async function run() {
       const result = await categoryCollection.findOne(query);
       res.send(result);
     });
+
     // category post api section
     app.post("/category", async (req, res) => {
       const user = req.body;
       const result = await bookedCategoryCollection.insertOne(user);
       res.send(result);
+    });
+
+    // user post api section
+    app.post("/user", async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+    app.get("/user/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      res.send({ isSeller: user?.role === "Seller" });
+    });
+    app.get("/user/buyer/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      res.send({ isBuyer: user?.role === "Buyer" });
+    });
+    app.get("/user/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      res.send({ isAdmin: user?.role === "admin" });
     });
   } finally {
     // code is fine
