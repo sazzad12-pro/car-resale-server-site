@@ -85,6 +85,17 @@ async function run() {
       const result = await categoryCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+    app.get("/all/user", async (req, res) => {
+      const query = {};
+      const user = await userCollection.find(query).toArray();
+      res.send(user);
+    });
+    app.delete("/user/remove/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
   } finally {
     // code is fine
   }
