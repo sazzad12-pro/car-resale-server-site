@@ -38,6 +38,12 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/booked", async (req, res) => {
+      const email = req.query.email;
+      const query = { userEmail: email };
+      const result = await bookedCategoryCollection.find(query).toArray();
+      res.send(result);
+    });
     // category post api section
     app.post("/category", async (req, res) => {
       const user = req.body;
@@ -68,6 +74,16 @@ async function run() {
       const query = { email };
       const user = await userCollection.findOne(query);
       res.send({ isAdmin: user?.role === "admin" });
+    });
+    app.post("/product", async (req, res) => {
+      const user = req.query.name;
+      const filter = { name: user };
+      const currentProduct = await categoryCollection.findOne(filter);
+      const updateDoc = {
+        $set: { category: [...currentProduct.category, req.body] },
+      };
+      const result = await categoryCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
   } finally {
     // code is fine
