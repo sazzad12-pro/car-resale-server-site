@@ -22,20 +22,20 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-// function verifyJWT(req, res, next) {
-//   const authHeader = req.headers.authorization;
-//   if (!authHeader) {
-//     return res.status(401).send("unauthorized access");
-//   }
-//   const token = authHeader.split(" ")[1];
-//   jwt.verify(token, process.env.ACCSESS_TOKEN, function (err, decoded) {
-//     if (err) {
-//       return res.status(403).send({ message: "forbidden access" });
-//     }
-//     req.decoded = decoded;
-//     next();
-//   });
-// }
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized access");
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCSESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 async function run() {
   try {
@@ -70,7 +70,7 @@ async function run() {
       const user = await userCollection.findOne(query);
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCSESS_TOKEN, {
-          expiresIn: "10d",
+          expiresIn: "7d",
         });
         return res.send({ accessToken: token });
       }
@@ -108,7 +108,7 @@ async function run() {
           transactionId: payment.transactionId,
         },
       };
-      const updatedResult = await bookingsCollection.updateOne(
+      const updatedResult = await bookedCategoryCollection.updateOne(
         filter,
         updatedDoc
       );
@@ -179,7 +179,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/all/user", async (req, res) => {
+    app.get("/all/user", verifyJWT, async (req, res) => {
       const query = {};
       const user = await userCollection.find(query).toArray();
       res.send(user);
@@ -195,6 +195,12 @@ async function run() {
         },
       };
       const result = await userCollection.updateOne(filter, update, option);
+      res.send(result);
+    });
+
+    app.get("/bookedItem", async (req, res) => {
+      const query = {};
+      const result = await bookedCategoryCollection.find(query).toArray();
       res.send(result);
     });
 
