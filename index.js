@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
@@ -12,7 +13,7 @@ const stripe = require("stripe")(
 app.use(cors());
 app.use(express.json());
 
-console.log(process.env.DB_SK);
+console.log(process.env.ACCSESS_TOKEN);
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4gwnm.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -20,6 +21,22 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
+
+// function verifyJWT(req, res, next) {
+//   const authHeader = req.headers.authorization;
+//   if (!authHeader) {
+//     return res.status(401).send("unauthorized access");
+//   }
+//   const token = authHeader.split(" ")[1];
+//   jwt.verify(token, process.env.ACCSESS_TOKEN, function (err, decoded) {
+//     if (err) {
+//       return res.status(403).send({ message: "forbidden access" });
+//     }
+//     req.decoded = decoded;
+//     next();
+//   });
+// }
+
 async function run() {
   try {
     const categoryCollection = client.db("carResale").collection("catagory");
@@ -44,6 +61,20 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await categoryCollection.findOne(query);
       res.send(result);
+    });
+
+    // jwt token api section
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCSESS_TOKEN, {
+          expiresIn: "10d",
+        });
+        return res.send({ accessToken: token });
+      }
+      res.status(403).send({ accessToken: "" });
     });
 
     app.get("/booked", async (req, res) => {
@@ -101,6 +132,18 @@ async function run() {
     app.post("/user", async (req, res) => {
       const user = req.body;
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.post("/google/user", async (req, res) => {
+      const filter = req.body;
+      const option = { upsert: true };
+      const update = {
+        $set: {
+          role: "Buyer",
+        },
+      };
+      const result = await userCollection.updateOne(filter, update, option);
       res.send(result);
     });
 
